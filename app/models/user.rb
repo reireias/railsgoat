@@ -39,18 +39,21 @@ class User < ApplicationRecord
   private
 
   def self.authenticate(email, password)
-    user = find_by_email(email) || User.new(password: "")
+    auth = nil
+    user = find_by_email(email)
     raise "#{email} doesn't exist!" if !(user)
-    if Rack::Utils.secure_compare(user.password, Digest::MD5.hexdigest(password))
-      return user
+    if BCrypt::Password.new(user.password) == password
+      auth = user
     else
-      raise "Incorrect username or password"
+      raise "Incorrect Password!"
     end
+    return auth
   end
 
   def hash_password
     if will_save_change_to_password?
-      self.password = Digest::MD5.hexdigest(self.password)
+      self.password = BCrypt::Password.create(self.password)
+      #=> "$2a${cost}${salt}{hash}"
     end
   end
 
